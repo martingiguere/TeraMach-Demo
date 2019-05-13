@@ -1,0 +1,314 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "AWS CloudFormation Template to deploy FortiGate -- AWSMP::3124a694-441c-4ff1-8bf7-4d153be424a6::b661b99c-17da-4b9e-a9fb-8a59da8e2d1e",
+  "Metadata": {
+    "AWS::CloudFormation::Interface": {
+      "ParameterGroups": [
+        {
+          "Label": {
+            "default": "VPC Configuration"
+          },
+          "Parameters": [
+            "VPCID",
+            "Public1Subnet",
+            "Private1Subnet"
+          ]
+        },
+        {
+          "Label": {
+            "default": "FortiGate Instance Configuration"
+          },
+          "Parameters": [
+            "FortiGateInstanceType",
+            "CIDRForFortiGateAccess"
+          ]
+        }
+      ]
+    }
+  },
+  "Parameters": {
+    "VPCID": {
+      "Type": "AWS::EC2::VPC::Id",
+      "Description": "Enter the VPC that you want to use the FortiGates in"
+    },
+    "Public1Subnet": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "Enter the value of the Public1 subnet"
+    },
+    "CIDRForFortiGateAccess": {
+      "Type": "String",
+      "Default": "0.0.0.0/0",
+      "Description": "Enter the CIDR from which FortiGate instances needs to be accessed"
+    },
+    "Private1Subnet": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "Enter the value of the Private1 subnet"
+    },
+    "FortiGateInstanceType": {
+      "Type": "String",
+      "Default": "c5.large",
+      "AllowedValues": [
+  			"t2.small",
+			"c5.large",
+			"c5.xlarge",
+			"c5.2xlarge",
+			"c5.4xlarge",
+			"c5.9xlarge",
+			"c5.18xlarge",
+			"c5n.large",
+			"c5n.xlarge",
+			"c5n.2xlarge",
+			"c5n.4xlarge",
+			"c5n.9xlarge",
+			"c5n.18xlarge"
+      ],
+      "Description": "Enter the instance type and size that you want for the FortiGate"
+    }
+  },
+  "Mappings": {
+    "RegionMap": {
+		"ap-northeast-1": {
+			"LambdaCode": "fortibucket-ap-northeast-1",
+			"fgtami": "ami-01717134c621e9735"
+		},
+		"ap-northeast-2": {
+			"LambdaCode": "fortibucket-ap-northeast-2",
+			"fgtami": "ami-09e9633d56e9dd64a"
+		},
+		"ap-south-1": {
+			"LambdaCode": "fortibucket-ap-south-1",
+			"fgtami": "ami-0e218bda8681b18e1"
+		},
+		"ap-southeast-1": {
+			"LambdaCode": "fortibucket-ap-southeast-1",
+			"fgtami": "ami-0f41a6c5e50d38dc2"
+		},
+		"ap-southeast-2": {
+			"LambdaCode": "fortibucket-ap-southeast-2",
+			"fgtami": "ami-0f670cae9c606b94a"
+		},
+		"ca-central-1": {
+			"LambdaCode": "fortibucket-ca-central-1",
+			"fgtami": "ami-06855da319cfcde7c"
+		},
+		"eu-central-1": {
+			"LambdaCode": "fortibucket-eu-central-1",
+			"fgtami": "ami-0f1a383a05eb44602"
+		},
+		"eu-west-1": {
+			"LambdaCode": "fortibucket-eu-west-1",
+			"fgtami": "ami-09756fbedaac05076"
+		},
+		"eu-west-2": {
+			"LambdaCode": "fortibucket-eu-west-2",
+			"fgtami": "ami-00d7818f03addbb4b"
+		},
+		"eu-west-3": {
+			"LambdaCode": "fortibucket-eu-west-3",
+			"fgtami": "ami-0698b8b6c81f9fdde"
+		},
+		"sa-east-1": {
+			"LambdaCode": "fortibucket-sa-east-1",
+			"fgtami": "ami-0c3a6acc24a8f6f24"
+		},
+		"us-east-1": {
+			"LambdaCode": "fortibucket-us-east-1",
+			"fgtami": "ami-081a50d612399ef3a"
+		},
+		"us-east-2": {
+			"LambdaCode": "fortibucket-us-east-2",
+			"fgtami": "ami-033a6d6ec5389bf58"
+		},
+		"us-west-1": {
+			"LambdaCode": "fortibucket-us-west-1",
+			"fgtami": "ami-0a18a6cb761d70cfe"
+		},
+		"us-west-2": {
+			"LambdaCode": "fortibucket-us-west-2",
+			"fgtami": "ami-0cac552cdf25122d0"
+		}
+    }
+  },
+  "Resources": {
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "VpcId": {
+          "Ref": "VPCID"
+        },
+        "GroupDescription": "Allow All Traffic",
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "-1",
+            "FromPort": "0",
+            "ToPort": "65535",
+            "CidrIp": {
+              "Ref": "CIDRForFortiGateAccess"
+            }
+          }
+        ]
+      }
+    },
+    "OnDemandA": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Fn::FindInMap": [
+            "RegionMap",
+            {
+              "Ref": "AWS::Region"
+            },
+            "fgtami"
+          ]
+        },
+        "InstanceType": {
+          "Ref": "FortiGateInstanceType"
+        },
+        "NetworkInterfaces": [
+          {
+            "NetworkInterfaceId": {
+              "Ref": "OnDemandAENI0"
+            },
+            "DeviceIndex": "0"
+          },
+          {
+            "NetworkInterfaceId": {
+              "Ref": "OnDemandAENI1"
+            },
+            "DeviceIndex": "1"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "-OnDemandA"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "OnDemandAENI0": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "eth0",
+        "GroupSet": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "SourceDestCheck": "true",
+        "SubnetId": {
+          "Ref": "Public1Subnet"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "OnDemandAENI0"
+                ]
+              ]
+            }
+          },
+          {
+            "Key": "Interface",
+            "Value": "eth0"
+          }
+        ]
+      }
+    },
+    "OnDemandAEIP": {
+      "Type": "AWS::EC2::EIP",
+      "Properties": {
+        "Domain": "vpc"
+      },
+      "DependsOn": "OnDemandA"
+    },
+    "OnDemandAEIPASSOCIATION": {
+      "Type": "AWS::EC2::EIPAssociation",
+      "Properties": {
+        "AllocationId": {
+          "Fn::GetAtt": [
+            "OnDemandAEIP",
+            "AllocationId"
+          ]
+        },
+        "NetworkInterfaceId": {
+          "Ref": "OnDemandAENI0"
+        }
+      },
+      "DependsOn": "OnDemandAEIP"
+    },
+    "OnDemandAENI1": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "Secondary Interface",
+        "GroupSet": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "SourceDestCheck": "false",
+        "SubnetId": {
+          "Ref": "Private1Subnet"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "OnDemandBENI1"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "Fortigate1": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "OnDemandAEIP"
+            }
+          ]
+        ]
+      },
+      "Description": "Connection to Fortigate1"
+    },
+    "UsernameforFortiGate1": {
+      "Value": "admin",
+      "Description": "Username to Access Fortigate"
+    },
+    "PasswordforFortiGate1": {
+      "Value": {
+        "Ref": "OnDemandA"
+      },
+      "Description": "Password to login to Fortigate is the instance id"
+    }
+  }
+}
