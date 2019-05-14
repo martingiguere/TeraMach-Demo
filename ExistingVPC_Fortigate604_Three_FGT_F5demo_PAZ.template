@@ -11,7 +11,8 @@
           "Parameters": [
             "VPCID",
             "Public1Subnet",
-            "Private1Subnet"
+            "Private1Subnet",
+			"Private2Subnet"
           ]
         },
         {
@@ -43,6 +44,10 @@
     "Private1Subnet": {
       "Type": "AWS::EC2::Subnet::Id",
       "Description": "Enter the value of the Private1 subnet"
+    },
+	"Private2Subnet": {
+      "Type": "AWS::EC2::Subnet::Id",
+      "Description": "Enter the value of the Out of Band management subnet"
     },
     "FortiGateInstanceType": {
       "Type": "String",
@@ -176,7 +181,13 @@
               "Ref": "OnDemandAENI1"
             },
             "DeviceIndex": "1"
-          }
+          },
+          {
+            "NetworkInterfaceId": {
+              "Ref": "OnDemandAENI2"
+            },
+            "DeviceIndex": "2"
+          }		  
         ],
         "Tags": [
           {
@@ -205,7 +216,7 @@
             "Ref": "SecurityGroup"
           }
         ],
-        "SourceDestCheck": "true",
+        "SourceDestCheck": "false",
         "SubnetId": {
           "Ref": "Public1Subnet"
         },
@@ -277,6 +288,37 @@
                     "Ref": "AWS::StackName"
                   },
                   "OnDemandBENI1"
+                ]
+              ]
+            }
+          }
+        ]
+      }
+	},  
+	"OnDemandAENI2": {
+      "Type": "AWS::EC2::NetworkInterface",
+      "Properties": {
+        "Description": "Out of Band Management Interface",
+        "GroupSet": [
+          {
+            "Ref": "SecurityGroup"
+          }
+        ],
+        "SourceDestCheck": "false",
+        "SubnetId": {
+          "Ref": "Private2Subnet"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": {
+              "Fn::Join": [
+                "",
+                [
+                  {
+                    "Ref": "AWS::StackName"
+                  },
+                  "OnDemandBENI2"
                 ]
               ]
             }
